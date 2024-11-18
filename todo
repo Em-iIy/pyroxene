@@ -1,0 +1,15 @@
+☐ Draw triangle
+	✔ Create VkInstance @done(24-11-14 20:39)
+	✔ Select graphics card @done(24-11-14 20:39)
+	✔ Create VkDevice @done(24-11-18 10:38)
+	☐ Create VkQueue
+	☐ Create window
+	☐ Create window surface
+	☐ Create swapchain
+	☐ Wrap swapchain images into VkImageView
+	☐ Create render pass
+	☐ Create framebuffers
+	☐ Set up graphics pipeline
+	☐ Allocate command buffer
+	☐ Draw frames
+
