@@ -43,7 +43,7 @@ use vulkano::{
 
 
 // current step:
-// https://vulkano.rs/03-buffer-creation/02-example-operation.html#submission-and-synchronization
+// https://vulkano.rs/04-compute-pipeline/02-compute-pipeline.html#compute-pipelines
 fn main() {
     let library = VulkanLibrary::new().expect("no local Vulkan library/DLL");
     let instance = Instance::new(
@@ -95,41 +95,22 @@ fn main() {
 
     let memory_allocator = Arc::new(StandardMemoryAllocator::new_default(device.clone()));
 
-	let source_content: Vec<i32> = (0..64).collect();
-	let source = Buffer::from_iter(
+	let data_iter = 0..65536u32;
+	let data_buffer = Buffer::from_iter(
 		memory_allocator.clone(),
 		BufferCreateInfo {
-			usage: BufferUsage::TRANSFER_SRC,
+			usage: BufferUsage::STORAGE_BUFFER,
 			..Default::default()
 		},
 		AllocationCreateInfo {
-			memory_type_filter: MemoryTypeFilter::PREFER_HOST
+			memory_type_filter: MemoryTypeFilter::PREFER_DEVICE
 				| MemoryTypeFilter::HOST_SEQUENTIAL_WRITE,
 			..Default::default()
 		},
-		source_content,
+		data_iter,
 	)
-	.expect("failed to create source buffer");
+	.expect("failed to create buffer");
 
-	let destination_content: Vec<i32> = (0..64).map(|_| 0).collect();
-	let destination = Buffer::from_iter(
-		memory_allocator.clone(),
-		BufferCreateInfo {
-			usage: BufferUsage::TRANSFER_DST,
-			..Default::default()
-		},
-		AllocationCreateInfo {
-			memory_type_filter: MemoryTypeFilter::PREFER_HOST
-			| MemoryTypeFilter::HOST_RANDOM_ACCESS,
-			..Default::default()
-		},
-		destination_content,
-	)
-	.expect("failed to create destination buffer");
-	{
-		let dst_content = destination.read().unwrap();
-		println!("destination content before: {:?}", dst_content);
-	}
 	let command_buffer_allocator = StandardCommandBufferAllocator::new(
 		device.clone(),
 		StandardCommandBufferAllocatorCreateInfo::default(),
@@ -141,22 +122,22 @@ fn main() {
 	)
 	.unwrap();
 
-	builder
-		.copy_buffer(CopyBufferInfo::buffers(source.clone(), destination.clone()))
-		.unwrap();
+	// builder
+	// 	.copy_buffer(CopyBufferInfo::buffers(source.clone(), destination.clone()))
+	// 	.unwrap();
 
-	let command_buffer = builder.build().unwrap();
+	// let command_buffer = builder.build().unwrap();
 
-	let future = sync::now(device.clone())
-		.then_execute(queue.clone(), command_buffer)
-		.unwrap()
-		.then_signal_fence_and_flush()
-		.unwrap();
+	// let future = sync::now(device.clone())
+	// 	.then_execute(queue.clone(), command_buffer)
+	// 	.unwrap()
+	// 	.then_signal_fence_and_flush()
+	// 	.unwrap();
 
-	future.wait(None).unwrap();
+	// future.wait(None).unwrap();
 
-	let src_content = source.read().unwrap();
-	let dst_content = destination.read().unwrap();
-	assert_eq!(&*src_content, &*dst_content);
-	println!("Copy successful! dstcontent: {:?}", dst_content);
+	// let src_content = source.read().unwrap();
+	// let dst_content = destination.read().unwrap();
+	// assert_eq!(&*src_content, &*dst_content);
+	// println!("Copy successful! dstcontent: {:?}", dst_content);
 }
