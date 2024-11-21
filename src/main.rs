@@ -7,13 +7,17 @@
 use std::sync::Arc;
 
 use vulkano::{
+	sync::{
+		self,
+		GpuFuture,
+	},
     buffer::{
 		Buffer,
 		BufferCreateInfo,
 		BufferUsage,
 	},
 	command_buffer::{
-		self, allocator::{
+		allocator::{
 			StandardCommandBufferAllocator,
 			StandardCommandBufferAllocatorCreateInfo,
 		}, AutoCommandBufferBuilder, CommandBufferUsage, CopyBufferInfo
@@ -87,11 +91,9 @@ fn main() {
     )
     .expect("failed to create device");
 
-    for queue in queues {
-        println!("{:?}", queue);
-    }
+    let queue = queues.next().unwrap();
+
     let memory_allocator = Arc::new(StandardMemoryAllocator::new_default(device.clone()));
-	let iter = (0..128).map(|_| 4u8);
 
 	let source_content: Vec<i32> = (0..64).collect();
 	let source = Buffer::from_iter(
@@ -118,13 +120,16 @@ fn main() {
 		},
 		AllocationCreateInfo {
 			memory_type_filter: MemoryTypeFilter::PREFER_HOST
-			    | MemoryTypeFilter::HOST_RANDOM_ACCESS,
+			| MemoryTypeFilter::HOST_RANDOM_ACCESS,
 			..Default::default()
 		},
 		destination_content,
 	)
 	.expect("failed to create destination buffer");
-
+	{
+		let dst_content = destination.read().unwrap();
+		println!("destination content before: {:?}", dst_content);
+	}
 	let command_buffer_allocator = StandardCommandBufferAllocator::new(
 		device.clone(),
 		StandardCommandBufferAllocatorCreateInfo::default(),
@@ -141,4 +146,17 @@ fn main() {
 		.unwrap();
 
 	let command_buffer = builder.build().unwrap();
+
+	let future = sync::now(device.clone())
+		.then_execute(queue.clone(), command_buffer)
+		.unwrap()
+		.then_signal_fence_and_flush()
+		.unwrap();
+
+	future.wait(None).unwrap();
+
+	let src_content = source.read().unwrap();
+	let dst_content = destination.read().unwrap();
+	assert_eq!(&*src_content, &*dst_content);
+	println!("Copy successful! dstcontent: {:?}", dst_content);
 }
